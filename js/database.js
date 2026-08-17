@@ -1,5 +1,0 @@
-const Database = {
-
-    usuarios:[]
-
-}
