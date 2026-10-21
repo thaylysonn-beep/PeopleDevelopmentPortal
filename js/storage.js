@@ -1,498 +1,81 @@
+
 const Storage = {
-
-    fileHandle: null,
-
-    // =====================================================
-    // SELECIONAR BANCO
-    // =====================================================
-
-    async selecionarBanco() {
-
-        try {
-
-            const [handle] =
-                await window.showOpenFilePicker({
-
-                    types: [
-                        {
-                            description: "Banco de Dados",
-
-                            accept: {
-                                "application/json": [".json"]
-                            }
-                        }
-                    ],
-
-                    multiple: false
-
-                });
-
-
-            this.fileHandle = handle;
-
-
-            const permission =
-                await this.fileHandle.requestPermission({
-                    mode: "readwrite"
-                });
-
-
-            if (permission === "granted") {
-
-                await this.salvarHandle(
-                    this.fileHandle
-                );
-
-
-                localStorage.setItem(
-                    "bancoAutorizado",
-                    "true"
-                );
-
-
-                console.log(
-                    "Banco autorizado e salvo."
-                );
-
-
-                return true;
-
-            }
-
-
-            return false;
-
-        }
-        catch (error) {
-
-            console.error(
-                "Erro ao selecionar banco:",
-                error
-            );
-
-            return false;
-
-        }
-
-    },
-
+    urlLeitura: "https://bf8c86d96bd4e3d995a78be4d4419d.09.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/0ff9d89d5e264ada9a04639abccb4afa/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=J-JXWHMMDoTjvOppHcwJRN3nUU70_lLDwD-Qu4jPJic",
+    urlGravacao: "https://bf8c86d96bd4e3d995a78be4d4419d.09.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/24/workflows/0cc215b5586c41a7add3d5e186eb8e5d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gxLr6YMtA3EPKS7VDFpDuPocQDKdXBdAvByH7DY6i4M",
 
     // =====================================================
-    // SALVAR HANDLE NO NAVEGADOR
+    // CARREGAR BANCO PELO POWER AUTOMATE
     // =====================================================
-
-    async salvarHandle(handle) {
-
-        return new Promise(
-            (resolve, reject) => {
-
-                const request =
-                    indexedDB.open(
-                        "PeopleDevelopmentPortal",
-                        1
-                    );
-
-
-                request.onupgradeneeded =
-                    function(event) {
-
-                        const db =
-                            event.target.result;
-
-
-                        if (
-                            !db.objectStoreNames.contains(
-                                "config"
-                            )
-                        ) {
-
-                            db.createObjectStore(
-                                "config"
-                            );
-
-                        }
-
-                    };
-
-
-                request.onsuccess =
-                    function(event) {
-
-                        const db =
-                            event.target.result;
-
-
-                        const transaction =
-                            db.transaction(
-                                ["config"],
-                                "readwrite"
-                            );
-
-
-                        const store =
-                            transaction.objectStore(
-                                "config"
-                            );
-
-
-                        store.put(
-                            handle,
-                            "bancoHandle"
-                        );
-
-
-                        transaction.oncomplete =
-                            function() {
-
-                                db.close();
-
-                                resolve(true);
-
-                            };
-
-
-                        transaction.onerror =
-                            function() {
-
-                                db.close();
-
-                                reject(
-                                    transaction.error
-                                );
-
-                            };
-
-                    };
-
-
-                request.onerror =
-                    function() {
-
-                        reject(
-                            request.error
-                        );
-
-                    };
-
-            }
-        );
-
-    },
-
-
-    // =====================================================
-    // RECUPERAR HANDLE SALVO
-    // =====================================================
-
-    async recuperarHandle() {
-
-        return new Promise(
-            (resolve, reject) => {
-
-                const request =
-                    indexedDB.open(
-                        "PeopleDevelopmentPortal",
-                        1
-                    );
-
-
-                request.onupgradeneeded =
-                    function(event) {
-
-                        const db =
-                            event.target.result;
-
-
-                        if (
-                            !db.objectStoreNames.contains(
-                                "config"
-                            )
-                        ) {
-
-                            db.createObjectStore(
-                                "config"
-                            );
-
-                        }
-
-                    };
-
-
-                request.onsuccess =
-                    function(event) {
-
-                        const db =
-                            event.target.result;
-
-
-                        const transaction =
-                            db.transaction(
-                                ["config"],
-                                "readonly"
-                            );
-
-
-                        const store =
-                            transaction.objectStore(
-                                "config"
-                            );
-
-
-                        const requestHandle =
-                            store.get(
-                                "bancoHandle"
-                            );
-
-
-                        requestHandle.onsuccess =
-                            function() {
-
-                                const handle =
-                                    requestHandle.result ||
-                                    null;
-
-
-                                db.close();
-
-
-                                resolve(handle);
-
-                            };
-
-
-                        requestHandle.onerror =
-                            function() {
-
-                                db.close();
-
-
-                                reject(
-                                    requestHandle.error
-                                );
-
-                            };
-
-                    };
-
-
-                request.onerror =
-                    function() {
-
-                        reject(
-                            request.error
-                        );
-
-                    };
-
-            }
-        );
-
-    },
-
-
-    // =====================================================
-    // VERIFICAR PERMISSÃO
-    // =====================================================
-
-    async verificarPermissao(handle) {
-
-        if (!handle) {
-
-            return false;
-
-        }
-
-
-        try {
-
-            const permission =
-                await handle.queryPermission({
-                    mode: "readwrite"
-                });
-
-
-            if (permission === "granted") {
-
-                return true;
-
-            }
-
-
-            const novaPermissao =
-                await handle.requestPermission({
-                    mode: "readwrite"
-                });
-
-
-            return (
-                novaPermissao === "granted"
-            );
-
-        }
-        catch (error) {
-
-            console.error(
-                "Erro verificando permissão:",
-                error
-            );
-
-            return false;
-
-        }
-
-    },
-
-
-    // =====================================================
-    // CARREGAR BANCO
-    // =====================================================
-
     async carregarBanco() {
-
         try {
+            const resposta = await fetch(this.urlLeitura, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({})
+            });
 
-            // Se ainda não temos o handle,
-            // tenta recuperar do navegador.
-
-            if (!this.fileHandle) {
-
-                this.fileHandle =
-                    await this.recuperarHandle();
-
+            if (!resposta.ok) {
+                throw new Error(`Erro HTTP ${resposta.status}`);
             }
 
+            const banco = await resposta.json();
 
-            if (!this.fileHandle) {
-
-                return null;
-
+            if (
+                !banco ||
+                typeof banco !== "object" ||
+                Array.isArray(banco)
+            ) {
+                throw new Error("O fluxo não retornou um banco válido.");
             }
 
+            console.log("Banco carregado com sucesso.");
+            return banco;
 
-            const autorizado =
-                await this.verificarPermissao(
-                    this.fileHandle
-                );
-
-
-            if (!autorizado) {
-
-                console.warn(
-                    "Banco não autorizado."
-                );
-
-                return null;
-
-            }
-
-
-            const file =
-                await this.fileHandle.getFile();
-
-
-            const texto =
-                await file.text();
-
-
-            return JSON.parse(texto);
-
-        }
-        catch (error) {
-
-            console.error(
-                "Erro carregando banco:",
-                error
-            );
-
+        } catch (error) {
+            console.error("Erro carregando banco:", error);
             return null;
-
         }
-
     },
 
-
     // =====================================================
-    // SALVAR BANCO
+    // SALVAR BANCO PELO POWER AUTOMATE
     // =====================================================
-
     async salvarBanco(banco) {
-
         try {
-
-            // Se perdeu o handle,
-            // tenta recuperar do navegador.
-
-            if (!this.fileHandle) {
-
-                this.fileHandle =
-                    await this.recuperarHandle();
-
+            if (
+                !banco ||
+                typeof banco !== "object" ||
+                Array.isArray(banco)
+            ) {
+                throw new Error("O banco informado é inválido.");
             }
 
+            const resposta = await fetch(this.urlGravacao, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(banco)
+            });
 
-            if (!this.fileHandle) {
+            const texto = await resposta.text();
 
-                console.error(
-                    "Nenhum banco autorizado."
+            if (!resposta.ok) {
+                throw new Error(
+                    `Erro HTTP ${resposta.status}: ${texto}`
                 );
-
-                return false;
-
             }
 
-
-            const autorizado =
-                await this.verificarPermissao(
-                    this.fileHandle
-                );
-
-
-            if (!autorizado) {
-
-                console.error(
-                    "Sem permissão para salvar banco."
-                );
-
-                return false;
-
-            }
-
-
-            const writable =
-                await this.fileHandle.createWritable();
-
-
-            await writable.write(
-                JSON.stringify(
-                    banco,
-                    null,
-                    4
-                )
-            );
-
-
-            await writable.close();
-
-
-            console.log(
-                "Banco salvo com sucesso!"
-            );
-
-
+            console.log("Resposta do fluxo:", texto);
             return true;
 
-        }
-        catch (error) {
-
-            console.error(
-                "Erro salvando banco:",
-                error
-            );
-
+        } catch (error) {
+            console.error("Erro salvando banco:", error);
             return false;
-
         }
-
     }
-
 };
