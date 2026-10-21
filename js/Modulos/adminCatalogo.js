@@ -11,21 +11,15 @@ const ModuloAdminCatalogo = {
     // ========================================================
 
     colunasEsperadas: [
-        "competencia",
-        "definicao",
-        "nivel1",
-        "nivel2",
-        "nivel3",
-        "nivel4",
-        "area",
-        "colaborador",
-        "cargo",
-        "dataAvaliacao",
-        "score",
-        "atingimento",
-        "situacao",
-        "gap",
-        "competenciasGap"
+    "competencia",
+    "definicao",
+    "nivel1",
+    "nivel2",
+    "nivel3",
+    "nivel4",
+    "cargo",
+    "area",
+    "colaborador"
     ],
 
 
@@ -411,6 +405,24 @@ const ModuloAdminCatalogo = {
 
         const aliases = {
 
+            cargo: [
+    "cargo",
+    "funcao",
+    "posicao"
+],
+
+area: [
+    "area",
+    "setor"
+],
+
+colaborador: [
+    "colaborador",
+    "nomecolaborador",
+    "nome",
+    "nomecompleto"
+],
+
             competencia: [
                 "competencia",
                 "nomecompetencia"
@@ -612,7 +624,20 @@ const ModuloAdminCatalogo = {
 
         const col =
             validacao.colunas;
+const cargo =
+    this.limparTexto(
+        linha[col.cargo]
+    );
 
+const area =
+    this.limparTexto(
+        linha[col.area]
+    );
+
+const colaborador =
+    this.limparTexto(
+        linha[col.colaborador]
+    );
         // ====================================================
         // PROCESSAR LINHAS
         // ====================================================
@@ -693,7 +718,9 @@ const ModuloAdminCatalogo = {
             registros.push({
 
                 linha: i + 1,
-
+Cargo,
+Área,
+Colaborador,
                 competencia,
 
                 definicao,
