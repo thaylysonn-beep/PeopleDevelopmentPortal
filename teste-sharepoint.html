@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste de leitura do SharePoint — PDP</title>
+<style>
+body{font:16px/1.5 system-ui,Segoe UI,Arial,sans-serif;max-width:760px;margin:40px auto;padding:0 18px;color:#172033}h1{font-size:1.5rem}button{padding:10px 16px;border:0;border-radius:8px;background:#174a7e;color:#fff;font-weight:600;cursor:pointer}#resultado{margin-top:18px;padding:14px;border:1px solid #ccd3dc;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}.nota{color:#4b5563;font-size:.95rem}
+</style>
+</head>
+<body>
+<h1>Teste de leitura automática do banco.json</h1>
+<p>Esta página tenta ler o arquivo do SharePoint sem alterar nem salvar dados. Ela não mostra o conteúdo do banco.</p>
+<button id="testar">Testar leitura</button>
+<div id="resultado" role="status">Clique em “Testar leitura” para começar.</div>
+<p class="nota">Execute o teste em uma aba do navegador já autenticada no SharePoint. O resultado não garante que o portal poderá salvar alterações; isso será verificado separadamente.</p>
+<script>
+const url = "https://agcompany.sharepoint.com/sites/OperationalPeopleDevelopment/_layouts/15/download.aspx?UniqueId=7f12471146bc42b4b1ecd8c113d6e55c&e=OVCZS8";
+const out = document.getElementById('resultado');
+document.getElementById('testar').addEventListener('click', async () => {
+  out.textContent = 'Testando…';
+  try {
+    const response = await fetch(url, { credentials: 'include' });
+    if (!response.ok) throw new Error('O servidor respondeu com HTTP ' + response.status + '.');
+    const data = await response.json();
+    const keys = data && typeof data === 'object' ? Object.keys(data).length : 0;
+    out.textContent = 'SUCESSO: o navegador conseguiu ler uma resposta JSON do SharePoint.\nTipo: ' + (Array.isArray(data) ? 'lista' : typeof data) + '\nQuantidade de chaves/itens de primeiro nível: ' + keys + '\n\nNenhum dado do banco foi exibido ou alterado.';
+  } catch (err) {
+    let msg = err && err.message ? err.message : String(err);
+    if (err instanceof TypeError) msg += '\nPossível causa: bloqueio de CORS, autenticação ou política de cookies do navegador.';
+    out.textContent = 'NÃO FOI POSSÍVEL LER AUTOMATICAMENTE.\n' + msg + '\n\nNenhum dado foi alterado. Envie esta mensagem de resultado para continuarmos.';
+  }
+});
+</script>
+</body>
+</html>
