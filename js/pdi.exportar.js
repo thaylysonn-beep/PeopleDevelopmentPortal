@@ -1,117 +1,99 @@
+
 const PDIExportar = {
 
+    exportar(banco) {
+        const colaboradores = banco.colaboradores || [];
+        const habilidades = banco.habilidades || [];
+        const avaliacoes = banco.avaliacoes || {};
+        const matrizEsperada = banco.matrizEsperada || {};
 
-    exportar(banco){
+        const escaparCSV = (valor) => {
+            const texto = valor == null ? "" : String(valor);
+            return `"${texto.replace(/"/g, '""')}"`;
+        };
 
+        let csv = "\uFEFFÁrea;Colaborador;Cargo;Data da Avaliação;Score;Atingimento;Situação;GAP;Competências GAP\n";
 
-        const colaboradores =
-            banco.colaboradores || [];
+        colaboradores.forEach((colaborador) => {
+            const esperado = matrizEsperada[colaborador.cargo] || [];
+            const avaliacao = avaliacoes[colaborador.id] || [];
 
+            const niveisAtuais = Array.isArray(avaliacao)
+                ? avaliacao
+                : (avaliacao.niveis || []);
 
-        const habilidades =
-            banco.habilidades || [];
+            const dataAvaliacao = Array.isArray(avaliacao)
+                ? ""
+                : (avaliacao.data || avaliacao.dataAvaliacao || "");
 
+            const scoreInformado = Array.isArray(avaliacao)
+                ? null
+                : (avaliacao.score ?? avaliacao.Score ?? null);
 
-        const avaliacoes =
-            banco.avaliacoes || {};
+            const atingimentoInformado = Array.isArray(avaliacao)
+                ? null
+                : (avaliacao.atingimento ?? avaliacao.Atingimento ?? null);
 
+            let totalEsperado = 0;
+            let totalAtual = 0;
+            const competenciasGAP = [];
 
-        const matrizEsperada =
-            banco.matrizEsperada || {};
+            habilidades.forEach((habilidade, index) => {
+                const atual = Number(niveisAtuais[index]) || 0;
+                const nivelEsperado = Number(esperado[index]) || 0;
 
+                totalEsperado += nivelEsperado;
+                totalAtual += Math.min(atual, nivelEsperado);
 
+                const gap = Math.max(0, nivelEsperado - atual);
 
-        let csv =
-        "\uFEFFColaborador;Cargo;Treinamento;Nivel Atual;Nivel Esperado;GAP\n";
-
-
-
-        colaboradores.forEach(colaborador=>{
-
-
-            const esperado =
-                matrizEsperada[colaborador.cargo] || [];
-
-
-            const avaliacao =
-                avaliacoes[colaborador.id] || [];
-
-
-
-            habilidades.forEach((habilidade,index)=>{
-
-
-                const atual =
-                    Number(avaliacao[index]) || 0;
-
-
-                const nivelEsperado =
-                    Number(esperado[index]) || 0;
-
-
-                const gap =
-                    nivelEsperado - atual;
-
-
-
-                if(gap > 0){
-
-
-                    csv +=
-
-`"${colaborador.nome}";"${colaborador.cargo}";"${habilidade}";"${atual}";"${nivelEsperado}";"${gap}"\n`;
-
-
+                if (gap > 0) {
+                    competenciasGAP.push(
+                        `${habilidade} (Atual: ${atual}, Esperado: ${nivelEsperado}, GAP: ${gap})`
+                    );
                 }
-
-
             });
 
+            const score = scoreInformado ?? totalAtual;
+            const atingimento = atingimentoInformado ??
+                (totalEsperado > 0
+                    ? `${((totalAtual / totalEsperado) * 100).toFixed(1).replace(".", ",")}%`
+                    : "0%");
 
+            const situacao = competenciasGAP.length === 0
+                ? "Sem GAP"
+                : "Com GAP";
+
+            const area = colaborador.area || colaborador.área || "";
+
+            const linha = [
+                area,
+                colaborador.nome || "",
+                colaborador.cargo || "",
+                dataAvaliacao,
+                score,
+                atingimento,
+                situacao,
+                competenciasGAP.length,
+                competenciasGAP.join(" | ")
+            ];
+
+            csv += linha.map(escaparCSV).join(";") + "\n";
         });
 
+        const blob = new Blob([csv], {
+            type: "text/csv;charset=utf-8;"
+        });
 
-
-        const blob =
-
-        new Blob(
-
-            [csv],
-
-            {
-                type:
-                "text/csv;charset=utf-8;"
-            }
-
-        );
-
-
-
-        const url =
-            URL.createObjectURL(blob);
-
-
-
-        const link =
-            document.createElement("a");
-
-
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
 
         link.href = url;
-
-
-        link.download =
-        "Relatorio_PDI.csv";
-
-
+        link.download = "Relatorio_PDI.csv";
+        document.body.appendChild(link);
         link.click();
+        link.remove();
 
-
-
-        URL.revokeObjectURL(url);
-
-
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
-
-
 };
