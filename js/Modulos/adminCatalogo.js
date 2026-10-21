@@ -5,6 +5,7 @@
 
 const ModuloAdminCatalogo = {
 
+    
     // ========================================================
     // CONFIGURAÇÃO
     // ========================================================
@@ -15,8 +16,18 @@ const ModuloAdminCatalogo = {
         "nivel1",
         "nivel2",
         "nivel3",
-        "nivel4"
+        "nivel4",
+        "area",
+        "colaborador",
+        "cargo",
+        "dataAvaliacao",
+        "score",
+        "atingimento",
+        "situacao",
+        "gap",
+        "competenciasGap"
     ],
+
 
     // ========================================================
     // NORMALIZAÇÃO
