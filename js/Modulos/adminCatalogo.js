@@ -625,7 +625,6 @@ colaborador: [
         const col =
             validacao.colunas;
 
-    );
         // ====================================================
         // PROCESSAR LINHAS
         // ====================================================
@@ -719,48 +718,41 @@ const colaborador =
             // complementar competências existentes.
 
            
+
 registros.push({
 
     linha: i + 1,
-
     competencia,
-
     definicao,
-
     nivel1,
-
     nivel2,
-
     nivel3,
-
     nivel4,
-
     cargo,
-
     area,
-
     colaborador
 
 });
 
+} // Fecha o for que processa as linhas
 
-        return {
+return {
 
-            planilha: nomePlanilha,
+    planilha: nomePlanilha,
 
-            registros,
+    registros,
 
-            erros,
+    erros,
 
-            totalLinhas:
-                Math.max(
-                    0,
-                    dados.length - 1
-                )
+    totalLinhas:
+        Math.max(
+            0,
+            dados.length - 1
+        )
 
-        };
+};
 
-    },
+},
 
     // ========================================================
     // ANALISAR UMA COMPETÊNCIA
