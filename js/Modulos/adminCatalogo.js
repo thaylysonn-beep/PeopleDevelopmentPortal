@@ -624,19 +624,7 @@ colaborador: [
 
         const col =
             validacao.colunas;
-const cargo =
-    this.limparTexto(
-        linha[col.cargo]
-    );
 
-const area =
-    this.limparTexto(
-        linha[col.area]
-    );
-
-const colaborador =
-    this.limparTexto(
-        linha[col.colaborador]
     );
         // ====================================================
         // PROCESSAR LINHAS
@@ -691,6 +679,21 @@ const colaborador =
                     linha[col.nivel4]
                 );
 
+const cargo =
+    this.limparTexto(
+        linha[col.cargo]
+    );
+
+const area =
+    this.limparTexto(
+        linha[col.area]
+    );
+
+const colaborador =
+    this.limparTexto(
+        linha[col.colaborador]
+    );
+
             // Competência é obrigatória
 
             if (!competencia) {
@@ -715,27 +718,31 @@ const colaborador =
             // Isso permite usar o Excel para
             // complementar competências existentes.
 
-            registros.push({
+           
+registros.push({
 
-                linha: i + 1,
-Cargo,
-Área,
-Colaborador,
-                competencia,
+    linha: i + 1,
 
-                definicao,
+    competencia,
 
-                nivel1,
+    definicao,
 
-                nivel2,
+    nivel1,
 
-                nivel3,
+    nivel2,
 
-                nivel4
+    nivel3,
 
-            });
+    nivel4,
 
-        }
+    cargo,
+
+    area,
+
+    colaborador
+
+});
+
 
         return {
 
@@ -1464,14 +1471,17 @@ Colaborador,
                             gap:8px;
                         ">
 
-                            ${[
-                                "Competência",
-                                "Definição",
-                                "Nível 1",
-                                "Nível 2",
-                                "Nível 3",
-                                "Nível 4"
-                            ].map(item => `
+                           ${[
+    "Competência",
+    "Definição",
+    "Nível 1",
+    "Nível 2",
+    "Nível 3",
+    "Nível 4",
+    "Cargo",
+    "Área",
+    "Nome do Colaborador"
+].map(item => `
 
                                 <span style="
                                     background:#253240;
