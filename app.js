@@ -8,109 +8,61 @@ let banco = null;
 const SENHA_SUCESSAO = "gestor";
 
 
-// =====================================
-// TELA AUTORIZAÇÃO DO BANCO
-// =====================================
 
-async function telaBanco(){
+ // =====================================
+ // TELA DE CARREGAMENTO DO BANCO
+ // =====================================
 
-    try{
-
-        banco = await Storage.carregarBanco();
-
-        if(banco){
-
-            console.log(
-                "Banco recuperado automaticamente."
-            );
-
-            mostrarLogin();
-
-            return;
-
-        }
-
-    }
-    catch(erro){
-
-        console.error(
-            "Erro tentando recuperar banco:",
-            erro
-        );
-
-    }
-
+async function telaBanco() {
 
     UI.carregar(`
-
         <div class="login">
-
             <div class="card">
-
                 <div style="text-align:center;margin-bottom:20px">
-
                     <img
                         src="assets/logo-corteva.png"
                         style="height:70px"
                     >
-
                 </div>
 
-                <h1>
-                    People Development Portal
-                </h1>
+                <h1>People Development Portal</h1>
 
                 <div class="subtitulo">
                     Desenvolvimento de Pessoas
                 </div>
 
-                <p class="footer">
-                    Banco não autorizado
+                <p class="footer" id="statusBanco">
+                    Conectando ao banco de dados...
                 </p>
-
-                <button id="btnBanco">
-                    🔐 Autorizar acesso ao banco
-                </button>
-
             </div>
-
         </div>
-
     `);
 
+    const status = document.getElementById("statusBanco");
 
-    document
-        .getElementById("btnBanco")
-        .onclick = async () => {
+    try {
+        banco = await Storage.carregarBanco();
 
-            const autorizado =
-                await Storage.selecionarBanco();
-
-            if(!autorizado){
-
-                return;
-
-            }
-
-            banco =
-                await Storage.carregarBanco();
-
-            if(!banco){
-
-                alert(
-                    "Erro ao carregar banco."
-                );
-
-                return;
-
-            }
-
+        if (
+            banco &&
+            typeof banco === "object" &&
+            !Array.isArray(banco)
+        ) {
+            console.log("Banco carregado pelo Power Automate.");
             mostrarLogin();
+            return;
+        }
 
-        };
+        status.textContent =
+            "Não foi possível carregar o banco. Verifique o fluxo de leitura e tente novamente.";
 
+    } catch (erro) {
+        console.error("Erro ao carregar o banco:", erro);
+
+        status.textContent =
+            "Falha na conexão com o banco de dados.";
+    }
 }
-
 
 // =====================================
 // TELA LOGIN
