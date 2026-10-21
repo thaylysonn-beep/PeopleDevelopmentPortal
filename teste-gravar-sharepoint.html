@@ -1,0 +1,74 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teste de gravação — PDP</title>
+</head>
+<body style="font-family:Arial;max-width:650px;margin:40px auto;padding:20px">
+
+  <h2>Teste de gravação no SharePoint</h2>
+  <p>Este teste altera somente o arquivo pdp_teste.json.</p>
+
+  <label for="url">URL HTTP do fluxo PDP_Gravar_Arquivo_Teste</label>
+  <input id="url" type="password" autocomplete="off"
+    style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:10px 0">
+
+  <label for="mensagem">Mensagem para gravar</label>
+  <input id="mensagem" value="Gravacao de teste do PDP"
+    style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:10px 0">
+
+  <button id="testar" style="padding:12px">Gravar no SharePoint</button>
+  <pre id="resultado" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+
+  <script>
+    const botao = document.getElementById("testar");
+    const resultado = document.getElementById("resultado");
+
+    botao.addEventListener("click", async () => {
+      const url = document.getElementById("url").value.trim();
+      const mensagem = document.getElementById("mensagem").value.trim();
+
+      if (!url.startsWith("https://")) {
+        resultado.textContent = "Informe a URL HTTPS do fluxo de gravação.";
+        return;
+      }
+
+      if (!mensagem) {
+        resultado.textContent = "Informe uma mensagem para gravar.";
+        return;
+      }
+
+      botao.disabled = true;
+      resultado.textContent = "Enviando dados para o SharePoint...";
+
+      try {
+        const resposta = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=UTF-8"
+          },
+          body: JSON.stringify({
+            mensagem: mensagem,
+            atualizadoEm: new Date().toISOString()
+          })
+        });
+
+        resultado.textContent =
+          "Status HTTP: " + resposta.status +
+          "\nResposta: " + await resposta.text();
+
+      } catch (erro) {
+        resultado.textContent =
+          "Falha no navegador: " + erro.message +
+          "\nVerifique a conexão, a URL e possíveis bloqueios de CORS.";
+
+      } finally {
+        botao.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+```
