@@ -1,4 +1,3 @@
-
 const PDIExportar = {
 
 
@@ -23,7 +22,7 @@ const PDIExportar = {
 
 
         let csv =
-        "\uFEFFÁrea;Colaborador;Cargo;Data da Avaliação;Score;Atingimento;Situação;GAP;Competências GAP\n";
+        "\uFEFFColaborador;Cargo;Treinamento;Nivel Atual;Nivel Esperado;GAP\n";
 
 
 
@@ -39,47 +38,11 @@ const PDIExportar = {
 
 
 
-            const niveisAtuais =
-                Array.isArray(avaliacao)
-                    ? avaliacao
-                    : (avaliacao.niveis || []);
-
-
-
-            const area =
-                colaborador.area ||
-                colaborador.área ||
-                "";
-
-
-
-            const dataAvaliacao =
-                Array.isArray(avaliacao)
-                    ? ""
-                    : (avaliacao.data ||
-                       avaliacao.dataAvaliacao ||
-                       "");
-
-
-
-            let score = 0;
-
-
-            let totalEsperado = 0;
-
-
-            let quantidadeGaps = 0;
-
-
-            const competenciasGap = [];
-
-
-
             habilidades.forEach((habilidade,index)=>{
 
 
                 const atual =
-                    Number(niveisAtuais[index]) || 0;
+                    Number(avaliacao[index]) || 0;
 
 
                 const nivelEsperado =
@@ -91,75 +54,18 @@ const PDIExportar = {
 
 
 
-                score += Math.min(atual, nivelEsperado);
-
-
-                totalEsperado += nivelEsperado;
-
-
-
                 if(gap > 0){
 
 
-                    quantidadeGaps++;
+                    csv +=
 
-
-                    competenciasGap.push(habilidade);
+`"${colaborador.nome}";"${colaborador.cargo}";"${habilidade}";"${atual}";"${nivelEsperado}";"${gap}"\n`;
 
 
                 }
 
 
             });
-
-
-
-            const atingimento =
-                totalEsperado > 0
-                    ? ((score / totalEsperado) * 100).toFixed(1) + "%"
-                    : "0%";
-
-
-
-            const situacao =
-                quantidadeGaps > 0
-                    ? "Com GAP"
-                    : "Sem GAP";
-
-
-
-            const campos = [
-
-                area,
-
-                colaborador.nome,
-
-                colaborador.cargo,
-
-                dataAvaliacao,
-
-                score,
-
-                atingimento,
-
-                situacao,
-
-                quantidadeGaps,
-
-                competenciasGap.join(", ")
-
-            ];
-
-
-
-            csv +=
-
-                campos.map(valor =>
-
-                    `"${String(valor ?? "").replace(/"/g, '""')}"`
-
-                ).join(";") + "\n";
-
 
 
         });
@@ -209,5 +115,3 @@ const PDIExportar = {
 
 
 };
-
-
