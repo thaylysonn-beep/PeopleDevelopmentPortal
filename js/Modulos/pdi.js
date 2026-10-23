@@ -1,0 +1,1957 @@
+const ModuloPDI = {
+
+    // =====================================================
+    // ABRIR
+    // =====================================================
+
+    abrir(usuario, banco) {
+
+        if (usuario.perfil === "ADMIN") {
+
+            this.relatorioGeral(
+                usuario,
+                banco
+            );
+
+        } else {
+
+            this.pdiIndividual(
+                usuario,
+                banco
+            );
+
+        }
+
+    },
+
+
+    // =====================================================
+    // RELATÓRIO GERAL - ADMIN
+    // =====================================================
+
+    relatorioGeral(usuario, banco) {
+
+        const matrizesPorArea =
+            banco.matrizesPorArea || {};
+
+        let totalColaboradores = 0;
+        let totalAvaliacoes = 0;
+        let totalGap = 0;
+        let somaScore = 0;
+
+        let linhas = "";
+
+
+        // =====================================================
+        // PERCORRER TODAS AS ÁREAS
+        // =====================================================
+
+        Object.keys(
+            matrizesPorArea
+        ).forEach(
+            nomeArea => {
+
+                const area =
+                    matrizesPorArea[
+                        nomeArea
+                    ];
+
+                if (!area) {
+                    return;
+                }
+
+
+                const colaboradores =
+                    Array.isArray(
+                        area.colaboradores
+                    )
+                        ? area.colaboradores
+                        : [];
+
+
+                const habilidades =
+                    Array.isArray(
+                        area.habilidades
+                    )
+                        ? area.habilidades
+                        : (
+                            Array.isArray(
+                                banco.habilidades
+                            )
+                                ? banco.habilidades
+                                : []
+                        );
+
+
+                const avaliacoes =
+                    area.avaliacoes || {};
+
+
+                const matrizEsperada =
+                    area.matrizEsperada || {};
+
+
+                // =================================================
+                // COLABORADORES
+                // =================================================
+
+                colaboradores.forEach(
+                    colaborador => {
+
+                        totalColaboradores++;
+
+
+                        const esperado =
+                            matrizEsperada[
+                                colaborador.cargo
+                            ] || [];
+
+
+                        const registro =
+                            avaliacoes[
+                                colaborador.id
+                            ];
+
+
+                        let avaliacao = [];
+
+                        let dataAvaliacao = "";
+
+
+                        // =================================================
+                        // NOVO FORMATO
+                        // =================================================
+
+                        if (
+                            registro &&
+                            !Array.isArray(registro) &&
+                            typeof registro === "object"
+                        ) {
+
+                            avaliacao =
+                                Array.isArray(
+                                    registro.niveis
+                                )
+                                    ? registro.niveis
+                                    : habilidades.map(
+                                        () => 0
+                                    );
+
+
+                            dataAvaliacao =
+                                registro.data || "";
+
+                        }
+
+
+                        // =================================================
+                        // FORMATO ANTIGO
+                        // =================================================
+
+                        else if (
+                            Array.isArray(
+                                registro
+                            )
+                        ) {
+
+                            avaliacao =
+                                registro;
+
+                        }
+
+
+                        // =================================================
+                        // SEM AVALIAÇÃO
+                        // =================================================
+
+                        else {
+
+                            avaliacao =
+                                habilidades.map(
+                                    () => 0
+                                );
+
+                        }
+
+
+                        // =================================================
+                        // CÁLCULOS
+                        // =================================================
+
+                        let soma = 0;
+
+                        let quantidadeNotas = 0;
+
+                        let gap = 0;
+
+                        let competenciasGap = [];
+
+
+                        habilidades.forEach(
+                            (
+                                habilidade,
+                                index
+                            ) => {
+
+                                const atual =
+                                    Number(
+                                        avaliacao[index]
+                                    ) || 0;
+
+
+                                const meta =
+                                    Number(
+                                        esperado[index]
+                                    ) || 0;
+
+
+                                soma += atual;
+
+                                quantidadeNotas++;
+
+
+                                if (
+                                    meta > atual
+                                ) {
+
+                                    gap +=
+                                        meta - atual;
+
+
+                                    competenciasGap.push(
+                                        this.obterNomeCompetencia(
+                                            habilidade
+                                        )
+                                    );
+
+                                }
+
+                            }
+                        );
+
+
+                        // =================================================
+                        // SCORE
+                        // =================================================
+
+                        const score =
+                            quantidadeNotas > 0
+                                ? Number(
+                                    (
+                                        soma /
+                                        quantidadeNotas
+                                    ).toFixed(2)
+                                )
+                                : 0;
+
+
+                        // =================================================
+                        // ATINGIMENTO
+                        // =================================================
+
+                        let totalMeta = 0;
+
+                        let totalAtual = 0;
+
+
+                        habilidades.forEach(
+                            (
+                                habilidade,
+                                index
+                            ) => {
+
+                                const meta =
+                                    Number(
+                                        esperado[index]
+                                    ) || 0;
+
+
+                                const atual =
+                                    Number(
+                                        avaliacao[index]
+                                    ) || 0;
+
+
+                                if (
+                                    meta > 0
+                                ) {
+
+                                    totalMeta +=
+                                        meta;
+
+
+                                    totalAtual +=
+                                        Math.min(
+                                            atual,
+                                            meta
+                                        );
+
+                                }
+
+                            }
+                        );
+
+
+                        const atingimento =
+                            totalMeta > 0
+                                ? Number(
+                                    (
+                                        totalAtual /
+                                        totalMeta *
+                                        100
+                                    ).toFixed(2)
+                                )
+                                : 0;
+
+
+                        // =================================================
+                        // SITUAÇÃO
+                        // =================================================
+
+                        let situacao =
+                            "Sem avaliação";
+
+
+                        const possuiAvaliacao =
+                            avaliacao.some(
+                                nivel =>
+                                    Number(
+                                        nivel
+                                    ) > 0
+                            );
+
+
+                        if (
+                            possuiAvaliacao
+                        ) {
+
+                            totalAvaliacoes++;
+
+                            somaScore +=
+                                score;
+
+                            totalGap +=
+                                gap;
+
+
+                            if (
+                                atingimento >= 90
+                            ) {
+
+                                situacao =
+                                    "Atingiu";
+
+                            }
+
+                            else if (
+                                atingimento >= 70
+                            ) {
+
+                                situacao =
+                                    "Atenção";
+
+                            }
+
+                            else {
+
+                                situacao =
+                                    "Crítico";
+
+                            }
+
+                        }
+
+
+                        // =================================================
+                        // DATA
+                        // =================================================
+
+                        let dataFormatada =
+                            dataAvaliacao;
+
+
+                        if (
+                            dataAvaliacao &&
+                            String(
+                                dataAvaliacao
+                            ).includes("-")
+                        ) {
+
+                            const partes =
+                                String(
+                                    dataAvaliacao
+                                ).split("-");
+
+
+                            if (
+                                partes.length === 3
+                            ) {
+
+                                dataFormatada =
+                                    `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+                            }
+
+                        }
+
+
+                        // =================================================
+                        // LINHA DA TABELA
+                        // =================================================
+
+                        linhas += `
+
+                            <tr>
+
+                                <td>
+                                    ${this.escapeHTML(
+                                        nomeArea
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${this.escapeHTML(
+                                        colaborador.nome || ""
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${this.escapeHTML(
+                                        colaborador.cargo || ""
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${this.escapeHTML(
+                                        dataFormatada || "-"
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${score.toFixed(2)}
+                                </td>
+
+                                <td>
+                                    ${atingimento.toFixed(2)}%
+                                </td>
+
+                                <td>
+                                    ${this.escapeHTML(
+                                        situacao
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${gap}
+                                </td>
+
+                                <td>
+                                    ${
+                                        competenciasGap.length
+                                            ? this.escapeHTML(
+                                                competenciasGap.join(
+                                                    ", "
+                                                )
+                                            )
+                                            : "-"
+                                    }
+                                </td>
+
+                            </tr>
+
+                        `;
+
+                    }
+                );
+
+            }
+        );
+
+
+        // =====================================================
+        // SCORE MÉDIO
+        // =====================================================
+
+        const scoreMedio =
+            totalAvaliacoes > 0
+                ? (
+                    somaScore /
+                    totalAvaliacoes
+                ).toFixed(2)
+                : "0.00";
+
+
+        // =====================================================
+        // HTML
+        // =====================================================
+
+        const html = `
+
+            <div class="portal">
+
+                <header class="topo">
+
+                    <div class="logo-area">
+
+                        <div class="logo-box">
+                            📊
+                        </div>
+
+                        <div>
+
+                            <h2>
+                                Relatórios de Desenvolvimento
+                            </h2>
+
+                            <span>
+                                Administrador:
+                                ${this.escapeHTML(
+                                    usuario.nome || ""
+                                )}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="acoes-topo">
+
+                        <button
+                            id="btnVoltarPDI"
+                            class="btnSecundario"
+                        >
+                            ← Voltar
+                        </button>
+
+                    </div>
+
+                </header>
+
+
+                <section class="conteudo">
+
+
+                    <!-- =================================================
+                         RESUMO
+                    ================================================== -->
+
+                    <div class="dashboardCards">
+
+
+                        <div class="card">
+
+                            <h3>
+                                👥 Colaboradores
+                            </h3>
+
+                            <strong>
+                                ${totalColaboradores}
+                            </strong>
+
+                            <p>
+                                Total cadastrado
+                            </p>
+
+                        </div>
+
+
+                        <div class="card">
+
+                            <h3>
+                                📋 Avaliações
+                            </h3>
+
+                            <strong>
+                                ${totalAvaliacoes}
+                            </strong>
+
+                            <p>
+                                Colaboradores avaliados
+                            </p>
+
+                        </div>
+
+
+                        <div class="card">
+
+                            <h3>
+                                ⭐ Score Médio
+                            </h3>
+
+                            <strong>
+                                ${scoreMedio}
+                            </strong>
+
+                            <p>
+                                Média das avaliações
+                            </p>
+
+                        </div>
+
+
+                        <div class="card">
+
+                            <h3>
+                                ⚠️ GAP Total
+                            </h3>
+
+                            <strong>
+                                ${totalGap}
+                            </strong>
+
+                            <p>
+                                Necessidades identificadas
+                            </p>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- =================================================
+                         EXPORTAÇÃO
+                    ================================================== -->
+
+                    <div
+                        class="card"
+                        style="
+                            margin-top:20px;
+                        "
+                    >
+
+                        <h3>
+                            📥 Exportar Relatórios
+                        </h3>
+
+
+                        <p>
+                            Baixe os relatórios disponíveis
+                            para análise do desenvolvimento
+                            e consulta do catálogo de competências.
+                        </p>
+
+
+                        <div
+                            style="
+                                display:flex;
+                                gap:10px;
+                                flex-wrap:wrap;
+                                margin-top:15px;
+                                align-items:center;
+                            "
+                        >
+
+
+                            <!-- =========================================
+                                 BOTÃO RELATÓRIO DE DESENVOLVIMENTO
+                            ========================================== -->
+
+                            <button
+                                id="btnExportarRelatorioPDI"
+                                class="btnAcao"
+                                style="
+                                    width:330px;
+                                    min-width:330px;
+                                    height:44px;
+                                    box-sizing:border-box;
+                                    display:inline-flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    margin:0;
+                                "
+                            >
+
+                                📊 Baixar Relatório de Desenvolvimento
+
+                            </button>
+
+
+                            <!-- =========================================
+                                 BOTÃO COMPETÊNCIAS E REGRAS
+                            ========================================== -->
+
+                            <button
+                                id="btnExportarCompetenciasRegras"
+                                class="btnAcao"
+                                style="
+                                    width:330px;
+                                    min-width:330px;
+                                    height:44px;
+                                    box-sizing:border-box;
+                                    display:inline-flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    margin:0;
+                                "
+                            >
+
+                                📚 Baixar Competências e Regras
+
+                            </button>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- =================================================
+                         TABELA DE DESENVOLVIMENTO
+                    ================================================== -->
+
+                    <div
+                        class="card"
+                        style="
+                            margin-top:20px;
+                        "
+                    >
+
+                        <h3>
+                            Desenvolvimento por Colaborador
+                        </h3>
+
+
+                        <div
+                            class="tabela-container"
+                            style="
+                                overflow-x:auto;
+                                margin-top:15px;
+                            "
+                        >
+
+                            <table>
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>
+                                            Área
+                                        </th>
+
+                                        <th>
+                                            Colaborador
+                                        </th>
+
+                                        <th>
+                                            Cargo
+                                        </th>
+
+                                        <th>
+                                            Data da Avaliação
+                                        </th>
+
+                                        <th>
+                                            Score
+                                        </th>
+
+                                        <th>
+                                            Atingimento
+                                        </th>
+
+                                        <th>
+                                            Situação
+                                        </th>
+
+                                        <th>
+                                            GAP
+                                        </th>
+
+                                        <th>
+                                            Competências GAP
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody>
+
+                                    ${
+                                        linhas ||
+                                        `
+                                        <tr>
+
+                                            <td
+                                                colspan="9"
+                                                style="
+                                                    text-align:center;
+                                                    padding:20px;
+                                                "
+                                            >
+
+                                                Nenhum dado
+                                                encontrado.
+
+                                            </td>
+
+                                        </tr>
+                                        `
+                                    }
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+
+                </section>
+
+            </div>
+
+        `;
+
+
+        // =====================================================
+        // CARREGAR
+        // =====================================================
+
+        UI.carregar(
+            html
+        );
+
+
+        // =====================================================
+        // BOTÃO VOLTAR
+        // =====================================================
+
+        const btnVoltar =
+            document.getElementById(
+                "btnVoltarPDI"
+            );
+
+
+        if (
+            btnVoltar
+        ) {
+
+            btnVoltar.onclick = () => {
+
+                ModuloAdmin.abrir(
+                    usuario,
+                    banco
+                );
+
+            };
+
+        }
+
+
+        // =====================================================
+        // BOTÃO RELATÓRIO DESENVOLVIMENTO
+        // =====================================================
+
+        const btnExportar =
+            document.getElementById(
+                "btnExportarRelatorioPDI"
+            );
+
+
+        if (
+            btnExportar
+        ) {
+
+            btnExportar.onclick = () => {
+
+                this.exportarRelatorio(
+                    banco
+                );
+
+            };
+
+        }
+
+
+        // =====================================================
+        // BOTÃO COMPETÊNCIAS E REGRAS
+        // =====================================================
+
+        const btnCompetencias =
+            document.getElementById(
+                "btnExportarCompetenciasRegras"
+            );
+
+
+        if (
+            btnCompetencias
+        ) {
+
+            btnCompetencias.onclick = () => {
+
+                this.exportarCompetenciasRegras(
+                    banco
+                );
+
+            };
+
+        }
+
+    },
+
+
+    // =====================================================
+    // EXPORTAR RELATÓRIO DE DESENVOLVIMENTO
+    // =====================================================
+
+    exportarRelatorio(banco) {
+
+        const matrizesPorArea =
+            banco.matrizesPorArea || {};
+
+
+        const linhas = [];
+
+
+        // =====================================================
+        // ÁREAS
+        // =====================================================
+
+        Object.keys(
+            matrizesPorArea
+        ).forEach(
+            nomeArea => {
+
+                const area =
+                    matrizesPorArea[
+                        nomeArea
+                    ];
+
+
+                if (
+                    !area
+                ) {
+
+                    return;
+
+                }
+
+
+                const colaboradores =
+                    Array.isArray(
+                        area.colaboradores
+                    )
+                        ? area.colaboradores
+                        : [];
+
+
+                const habilidades =
+                    Array.isArray(
+                        area.habilidades
+                    )
+                        ? area.habilidades
+                        : (
+                            Array.isArray(
+                                banco.habilidades
+                            )
+                                ? banco.habilidades
+                                : []
+                        );
+
+
+                const avaliacoes =
+                    area.avaliacoes || {};
+
+
+                const matrizEsperada =
+                    area.matrizEsperada || {};
+
+
+                // =================================================
+                // COLABORADORES
+                // =================================================
+
+                colaboradores.forEach(
+                    colaborador => {
+
+                        const esperado =
+                            matrizEsperada[
+                                colaborador.cargo
+                            ] || [];
+
+
+                        const registro =
+                            avaliacoes[
+                                colaborador.id
+                            ];
+
+
+                        let avaliacao = [];
+
+                        let dataAvaliacao = "";
+
+
+                        // =================================================
+                        // NOVO FORMATO
+                        // =================================================
+
+                        if (
+                            registro &&
+                            !Array.isArray(registro) &&
+                            typeof registro === "object"
+                        ) {
+
+                            avaliacao =
+                                Array.isArray(
+                                    registro.niveis
+                                )
+                                    ? registro.niveis
+                                    : habilidades.map(
+                                        () => 0
+                                    );
+
+
+                            dataAvaliacao =
+                                registro.data || "";
+
+                        }
+
+
+                        // =================================================
+                        // FORMATO ANTIGO
+                        // =================================================
+
+                        else if (
+                            Array.isArray(
+                                registro
+                            )
+                        ) {
+
+                            avaliacao =
+                                registro;
+
+                        }
+
+
+                        // =================================================
+                        // SEM AVALIAÇÃO
+                        // =================================================
+
+                        else {
+
+                            avaliacao =
+                                habilidades.map(
+                                    () => 0
+                                );
+
+                        }
+
+
+                        // =================================================
+                        // DATA
+                        // =================================================
+
+                        let dataFormatada =
+                            dataAvaliacao;
+
+
+                        if (
+                            dataAvaliacao &&
+                            String(
+                                dataAvaliacao
+                            ).includes("-")
+                        ) {
+
+                            const partes =
+                                String(
+                                    dataAvaliacao
+                                ).split("-");
+
+
+                            if (
+                                partes.length === 3
+                            ) {
+
+                                dataFormatada =
+                                    `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+                            }
+
+                        }
+
+
+                        // =================================================
+                        // HABILIDADES
+                        // =================================================
+
+                        habilidades.forEach(
+                            (
+                                habilidade,
+                                index
+                            ) => {
+
+                                const nivelEsperado =
+                                    Number(
+                                        esperado[index]
+                                    ) || 0;
+
+
+                                const nivelAtual =
+                                    Number(
+                                        avaliacao[index]
+                                    ) || 0;
+
+
+                                const gap =
+                                    Math.max(
+                                        0,
+                                        nivelEsperado -
+                                        nivelAtual
+                                    );
+
+
+                                linhas.push([
+
+                                    nomeArea,
+
+                                    colaborador.nome ||
+                                    "",
+
+                                    colaborador.cargo ||
+                                    "",
+
+                                    this.obterNomeCompetencia(
+                                        habilidade
+                                    ),
+
+                                    nivelEsperado,
+
+                                    nivelAtual,
+
+                                    gap,
+
+                                    dataFormatada
+
+                                ]);
+
+                            }
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        // =====================================================
+        // CABEÇALHO
+        // =====================================================
+
+        const cabecalho = [
+
+            "Área",
+
+            "Colaborador",
+
+            "Cargo",
+
+            "Habilidade",
+
+            "Nível Esperado",
+
+            "Nível Atual",
+
+            "GAP",
+
+            "Data da Avaliação"
+
+        ];
+
+
+        // =====================================================
+        // GERAR CSV
+        // =====================================================
+
+        let csv =
+            cabecalho
+                .map(
+                    valor =>
+                        this.formatarCSV(
+                            valor
+                        )
+                )
+                .join(";") +
+            "\n";
+
+
+        linhas.forEach(
+            linha => {
+
+                csv +=
+                    linha
+                        .map(
+                            valor =>
+                                this.formatarCSV(
+                                    valor
+                                )
+                        )
+                        .join(";") +
+                    "\n";
+
+            }
+        );
+
+
+        // =====================================================
+        // DOWNLOAD
+        // =====================================================
+
+        this.baixarCSV(
+
+            csv,
+
+            "Relatorio_Desenvolvimento.csv"
+
+        );
+
+    },
+
+
+    // =====================================================
+    // EXPORTAR COMPETÊNCIAS E REGRAS
+    // =====================================================
+
+    
+    // =====================================================
+    // EXPORTAR COMPETÊNCIAS E REGRAS
+    // =====================================================
+
+    exportarCompetenciasRegras(banco) {
+
+        const matrizesPorArea =
+            banco.matrizesPorArea || {};
+
+        const registros = new Map();
+
+        // =====================================================
+        // NORMALIZAR TEXTO PARA COMPARAÇÃO
+        // =====================================================
+
+        const normalizarNome = valor => {
+
+            if (
+                valor === null ||
+                valor === undefined
+            ) {
+                return "";
+            }
+
+            return String(valor)
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .trim()
+                .toLowerCase();
+        };
+
+        // =====================================================
+        // OBTER NOME DA COMPETÊNCIA
+        // =====================================================
+
+        const obterNome = competencia => {
+
+            if (typeof competencia === "string") {
+                return competencia.trim();
+            }
+
+            if (
+                competencia &&
+                typeof competencia === "object"
+            ) {
+                return String(
+                    competencia.competencia ||
+                    competencia.nome ||
+                    competencia.habilidade ||
+                    competencia.titulo ||
+                    competencia["Competência"] ||
+                    ""
+                ).trim();
+            }
+
+            return "";
+        };
+
+        // =====================================================
+        // LOCALIZAR DETALHES DA COMPETÊNCIA
+        // =====================================================
+
+        const localizarDetalhes = (catalogo, nome) => {
+
+            if (
+                !catalogo ||
+                typeof catalogo !== "object" ||
+                !nome
+            ) {
+                return {};
+            }
+
+            if (
+                catalogo[nome] &&
+                typeof catalogo[nome] === "object"
+            ) {
+                return catalogo[nome];
+            }
+
+            const chave = normalizarNome(nome);
+
+            const encontrada = Object.keys(catalogo).find(
+                nomeCatalogo =>
+                    normalizarNome(nomeCatalogo) === chave
+            );
+
+            if (encontrada) {
+                return catalogo[encontrada] || {};
+            }
+
+            return {};
+        };
+
+        // =====================================================
+        // NORMALIZAR DEFINIÇÃO E NÍVEIS
+        // =====================================================
+
+        const normalizarDetalhes = dados => {
+
+            dados = dados || {};
+
+            const niveis =
+                dados.niveis &&
+                typeof dados.niveis === "object"
+                    ? dados.niveis
+                    : {};
+
+            return {
+
+                definicao:
+                    dados.definicao ||
+                    dados.definição ||
+                    dados["Definição"] ||
+                    "",
+
+                nivel1:
+                    niveis[1] ||
+                    niveis["1"] ||
+                    dados.nivel1 ||
+                    dados["Nível 1"] ||
+                    dados["Nivel 1"] ||
+                    dados.nivel_1 ||
+                    "",
+
+                nivel2:
+                    niveis[2] ||
+                    niveis["2"] ||
+                    dados.nivel2 ||
+                    dados["Nível 2"] ||
+                    dados["Nivel 2"] ||
+                    dados.nivel_2 ||
+                    "",
+
+                nivel3:
+                    niveis[3] ||
+                    niveis["3"] ||
+                    dados.nivel3 ||
+                    dados["Nível 3"] ||
+                    dados["Nivel 3"] ||
+                    dados.nivel_3 ||
+                    "",
+
+                nivel4:
+                    niveis[4] ||
+                    niveis["4"] ||
+                    dados.nivel4 ||
+                    dados["Nível 4"] ||
+                    dados["Nivel 4"] ||
+                    dados.nivel_4 ||
+                    ""
+            };
+        };
+
+        // =====================================================
+        // PERCORRER CADA ÁREA E SUA MATRIZ
+        // =====================================================
+
+        Object.keys(matrizesPorArea).forEach(nomeArea => {
+
+            const area = matrizesPorArea[nomeArea];
+
+            if (!area) {
+                return;
+            }
+
+            const competenciasArea = new Map();
+
+            // =================================================
+            // ADICIONAR COMPETÊNCIA DA ÁREA
+            // =================================================
+
+            const adicionarNaArea = competencia => {
+
+                const nome = obterNome(competencia);
+                const chaveCompetencia = normalizarNome(nome);
+
+                if (!nome || !chaveCompetencia) {
+                    return;
+                }
+
+                const objetoCompetencia =
+                    competencia &&
+                    typeof competencia === "object"
+                        ? competencia
+                        : {};
+
+                const detalhesGlobais = localizarDetalhes(
+                    banco.detalhesHabilidades,
+                    nome
+                );
+
+                const detalhesArea = localizarDetalhes(
+                    area.detalhesHabilidades,
+                    nome
+                );
+
+                // Prioridade para os detalhes específicos da área.
+                const detalhes = normalizarDetalhes({
+
+                    ...detalhesGlobais,
+
+                    ...objetoCompetencia,
+
+                    ...detalhesArea
+
+                });
+
+                const existente =
+                    competenciasArea.get(chaveCompetencia);
+
+                if (!existente) {
+
+                    competenciasArea.set(
+                        chaveCompetencia,
+                        {
+                            competencia: nome,
+                            ...detalhes
+                        }
+                    );
+
+                    return;
+                }
+
+                // Completa campos vazios sem apagar dados existentes.
+                [
+                    "definicao",
+                    "nivel1",
+                    "nivel2",
+                    "nivel3",
+                    "nivel4"
+                ].forEach(campo => {
+
+                    if (
+                        !existente[campo] &&
+                        detalhes[campo]
+                    ) {
+                        existente[campo] = detalhes[campo];
+                    }
+
+                });
+
+            };
+
+            // =================================================
+            // HABILIDADES CADASTRADAS NA MATRIZ DA ÁREA
+            // =================================================
+
+            if (Array.isArray(area.habilidades)) {
+
+                area.habilidades.forEach(
+                    adicionarNaArea
+                );
+
+            }
+
+            // =================================================
+            // DETALHES ESPECÍFICOS DA ÁREA
+            // =================================================
+
+            if (
+                area.detalhesHabilidades &&
+                typeof area.detalhesHabilidades === "object"
+            ) {
+
+                Object.keys(
+                    area.detalhesHabilidades
+                ).forEach(nome => {
+
+                    adicionarNaArea({
+
+                        competencia: nome,
+
+                        ...(area.detalhesHabilidades[nome] || {})
+
+                    });
+
+                });
+
+            }
+
+            // =================================================
+            // IDENTIFICAR CARGOS DA MATRIZ
+            // =================================================
+
+            let cargos = Array.isArray(area.cargos)
+                ? area.cargos.slice()
+                : [];
+
+            if (
+                !cargos.length &&
+                area.matrizEsperada &&
+                typeof area.matrizEsperada === "object"
+            ) {
+                cargos = Object.keys(area.matrizEsperada);
+            }
+
+            if (
+                !cargos.length &&
+                Array.isArray(area.colaboradores)
+            ) {
+
+                cargos = area.colaboradores
+                    .map(colaborador =>
+                        colaborador && colaborador.cargo
+                    )
+                    .filter(Boolean);
+
+            }
+
+            cargos = [
+                ...new Set(
+                    cargos
+                        .map(cargo => String(cargo).trim())
+                        .filter(Boolean)
+                )
+            ];
+
+            // Se não houver cargo cadastrado, mantém a área.
+            if (!cargos.length) {
+                cargos = [""];
+            }
+
+            // =================================================
+            // REGISTRAR ÁREA + CARGO + COMPETÊNCIA
+            // =================================================
+
+
+cargos.forEach(cargo => {
+
+    competenciasArea.forEach((registro, chaveCompetencia) => {
+
+        // Buscar a matriz de níveis esperados para o cargo.
+        const matrizEsperada =
+            area.matrizEsperada || {};
+
+        const niveisEsperados =
+            matrizEsperada[cargo] || [];
+
+        // Localizar a posição da competência na matriz.
+        const habilidades =
+            Array.isArray(area.habilidades)
+                ? area.habilidades
+                : [];
+
+        const indice = habilidades.findIndex(habilidade =>
+            normalizarNome(obterNome(habilidade)) ===
+            normalizarNome(registro.competencia)
+        );
+
+        // Se a competência não estiver na matriz,
+        // não exportar para esse cargo.
+        if (indice < 0) {
+            return;
+        }
+
+        // Não exportar quando o nível esperado for zero.
+        const nivelEsperado =
+            Number(niveisEsperados[indice]) || 0;
+
+        if (nivelEsperado <= 0) {
+            return;
+        }
+
+        const chave = [
+            normalizarNome(nomeArea),
+            normalizarNome(cargo),
+            normalizarNome(registro.competencia)
+        ].join("|");
+
+        if (!registros.has(chave)) {
+
+            registros.set(chave, {
+                area: nomeArea,
+                cargo: cargo,
+                competencia: registro.competencia,
+                definicao: registro.definicao,
+                nivel1: registro.nivel1,
+                nivel2: registro.nivel2,
+                nivel3: registro.nivel3,
+                nivel4: registro.nivel4
+            });
+
+        }
+
+    });
+
+});
+
+        });
+
+        // =====================================================
+        // VALIDAR RESULTADO
+        // =====================================================
+
+        if (registros.size === 0) {
+
+            alert(
+                "Nenhuma competência encontrada nas matrizes para exportação."
+            );
+
+            return;
+        }
+
+        // =====================================================
+        // ORDENAR POR ÁREA, CARGO E COMPETÊNCIA
+        // =====================================================
+
+        const listaRegistros = Array
+            .from(registros.values())
+            .sort((a, b) => {
+
+                return (
+
+                    a.area.localeCompare(
+                        b.area,
+                        "pt-BR",
+                        { sensitivity: "base" }
+                    ) ||
+
+                    a.cargo.localeCompare(
+                        b.cargo,
+                        "pt-BR",
+                        { sensitivity: "base" }
+                    ) ||
+
+                    a.competencia.localeCompare(
+                        b.competencia,
+                        "pt-BR",
+                        { sensitivity: "base" }
+                    )
+
+                );
+
+            });
+
+        // =====================================================
+        // CABEÇALHO DO CSV
+        // =====================================================
+
+        const cabecalho = [
+
+            "Cargo",
+
+            "Área",
+
+            "Competência",
+
+            "Definição",
+
+            "Nível 1",
+
+            "Nível 2",
+
+            "Nível 3",
+
+            "Nível 4"
+
+        ];
+
+        // =====================================================
+        // GERAR CSV
+        // =====================================================
+
+        let csv = cabecalho
+            .map(valor => this.formatarCSV(valor))
+            .join(";") + "\n";
+
+        listaRegistros.forEach(registro => {
+
+            csv += [
+
+                registro.cargo,
+
+                registro.area,
+
+                registro.competencia,
+
+                registro.definicao,
+
+                registro.nivel1,
+
+                registro.nivel2,
+
+                registro.nivel3,
+
+                registro.nivel4
+
+            ]
+                .map(valor => this.formatarCSV(valor))
+                .join(";") + "\n";
+
+        });
+
+        // =====================================================
+        // DOWNLOAD
+        // =====================================================
+
+        this.baixarCSV(
+            csv,
+            "Competencias_e_Regras.csv"
+        );
+
+        // =====================================================
+        // CONFIRMAÇÃO
+        // =====================================================
+
+        alert(
+            `${listaRegistros.length} registro(s) de competência, cargo e área exportado(s) com sucesso.`
+        );
+
+    },
+
+
+
+    // =====================================================
+    // OBTER NOME DA COMPETÊNCIA
+    // =====================================================
+
+    obterNomeCompetencia(
+        competencia
+    ) {
+
+        if (
+            typeof competencia === "string"
+        ) {
+
+            return competencia;
+
+        }
+
+
+        if (
+            competencia &&
+            typeof competencia === "object"
+        ) {
+
+            return (
+
+                competencia.competencia ||
+
+                competencia.nome ||
+
+                competencia.habilidade ||
+
+                competencia.titulo ||
+
+                competencia["Competência"] ||
+
+                ""
+
+            );
+
+        }
+
+
+        return "";
+
+    },
+
+
+    // =====================================================
+    // BAIXAR CSV
+    // =====================================================
+
+    baixarCSV(
+        csv,
+        nomeArquivo
+    ) {
+
+        const blob =
+            new Blob(
+                [
+                    "\ufeff" +
+                    csv
+                ],
+                {
+                    type:
+                        "text/csv;charset=utf-8;"
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+
+        link.href =
+            url;
+
+
+        link.download =
+            nomeArquivo;
+
+
+        document.body.appendChild(
+            link
+        );
+
+
+        link.click();
+
+
+        document.body.removeChild(
+            link
+        );
+
+
+        setTimeout(
+            () => {
+
+                URL.revokeObjectURL(
+                    url
+                );
+
+            },
+            100
+        );
+
+    },
+
+
+    // =====================================================
+    // FORMATAR CSV
+    // =====================================================
+
+    formatarCSV(
+        valor
+    ) {
+
+        if (
+            valor === null ||
+            valor === undefined
+        ) {
+
+            return '""';
+
+        }
+
+
+        return (
+
+            '"' +
+
+            String(
+                valor
+            )
+                .replace(
+                    /"/g,
+                    '""'
+                )
+                .replace(
+                    /\r?\n|\r/g,
+                    " "
+                )
+                .trim() +
+
+            '"'
+
+        );
+
+    },
+
+
+    // =====================================================
+    // SEGURANÇA HTML
+    // =====================================================
+
+    escapeHTML(
+        valor
+    ) {
+
+        if (
+            valor === null ||
+            valor === undefined
+        ) {
+
+            return "";
+
+        }
+
+
+        return String(
+            valor
+        )
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
+
+    },
+
+
+    // =====================================================
+    // PDI INDIVIDUAL
+    // =====================================================
+
+    pdiIndividual(
+        usuario,
+        banco
+    ) {
+
+        // Mantido para compatibilidade.
+        // O gestor continua utilizando
+        // o Dashboard.
+
+        mostrarDashboard(
+            usuario
+        );
+
+    }
+
+};
